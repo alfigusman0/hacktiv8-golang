@@ -5,7 +5,7 @@ type Item struct {
 	ItemCode    string `json:"item_code" gorm:"column:item_code"`
 	Description string `json:"description" gorm:"column:description"`
 	Quantity    int    `json:"quantity" gorm:"column:quantity"`
-	OrderID     uint   `json:"order_id" gorm:"column:order_id"`
+	OrderID     *uint  `json:"order_id" gorm:"column:order_id"`
 }
 
 type GetAllItemRequest struct {
@@ -17,7 +17,7 @@ type GetAllItemRequest struct {
 }
 
 type CreateItemRequest struct {
-	ItemCode    string `json:"item_code" binding:"required" unique:"true"`
+	ItemCode    string `json:"item_code" binding:"required"`
 	Description string `json:"description" binding:"required"`
 	Quantity    int    `json:"quantity" binding:"required"`
 	OrderID     *uint  `json:"order_id"`
@@ -27,4 +27,5 @@ type UpdateItemRequest struct {
 	ItemCode    string `json:"item_code"`
 	Description string `json:"description"`
 	Quantity    int    `json:"quantity"`
+	OrderID     *uint  `json:"order_id"`
 }
