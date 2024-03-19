@@ -34,6 +34,7 @@ func (is *ItemService) CreateItem(req models.CreateItemRequest) (*models.Item, e
 		ItemCode:    req.ItemCode,
 		Description: req.Description,
 		Quantity:    req.Quantity,
+		OrderID:     req.OrderID,
 	}
 	if err := is.db.Create(&item).Error; err != nil {
 		return nil, err
@@ -46,9 +47,11 @@ func (is *ItemService) UpdateItem(itemID uint, req models.UpdateItemRequest) (*m
 	if err != nil {
 		return nil, err
 	}
+	item.ItemID = req.ItemID
 	item.ItemCode = req.ItemCode
 	item.Description = req.Description
 	item.Quantity = req.Quantity
+	item.OrderID = req.OrderID
 	if err := is.db.Save(&item).Error; err != nil {
 		return nil, err
 	}

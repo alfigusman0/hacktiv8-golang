@@ -13,7 +13,7 @@ type GetAllItemRequest struct {
 	ItemCode    string `json:"item_code"`
 	Description string `json:"description"`
 	Quantity    int    `json:"quantity"`
-	OrderID     uint   `json:"order_id"`
+	OrderID     uint   `json:"order_id" gorm:"foreignKey:OrderID;references:OrderID"`
 }
 
 type CreateItemRequest struct {
@@ -24,8 +24,9 @@ type CreateItemRequest struct {
 }
 
 type UpdateItemRequest struct {
-	ItemCode    string `json:"item_code"`
-	Description string `json:"description"`
-	Quantity    int    `json:"quantity"`
+	ItemID      uint   `json:"item_id" bidnding:"required"`
+	ItemCode    string `json:"item_code" bidnding:"required"`
+	Description string `json:"description" bidnding:"required"`
+	Quantity    int    `json:"quantity" bidnding:"required"`
 	OrderID     *uint  `json:"order_id"`
 }

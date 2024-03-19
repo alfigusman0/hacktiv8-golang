@@ -4,6 +4,7 @@ import (
 	"assignment_2/pkg/models"
 	"fmt"
 	"gorm.io/gorm"
+	"time"
 )
 
 type OrderService struct {
@@ -30,28 +31,67 @@ func (os *OrderService) GetOrderByID(orderID uint) (*models.Order, error) {
 	return &order, nil
 }
 
-func (os *OrderService) CreateOrder(req models.CreateOrderRequest) (*models.CreateOrderRequest, error) {
-	order := models.CreateOrderRequest{
+func (os *OrderService) CreateOrder(req models.CreateOrderRequest) (*models.Order, error) {
+	now := time.Now()
+	order := models.Order{
 		CustomerName: req.CustomerName,
+		OrderedAt:    now,
 	}
 	if err := os.db.Create(&order).Error; err != nil {
 		return nil, err
 	}
+
+	var items []models.Item
+
+	for _, item := range req.Items {
+		var itemModel models.Item
+		itemModel.ItemCode = item.ItemCode
+		itemModel.Description = item.Description
+		itemModel.Quantity = item.Quantity
+		itemModel.OrderID = &order.OrderID
+		items = append(items, itemModel)
+	}
+
+	if err := os.db.Create(&items).Error; err != nil {
+		return nil, err
+	}
+
+	order.Items = items
 	return &order, nil
 }
 
-func (os *OrderService) UpdateOrder(orderID uint, req models.UpdateOrderRequest) (*models.UpdateOrderRequest, error) {
+func (os *OrderService) UpdateOrder(orderID uint, req models.UpdateOrderRequest) (*models.Order, error) {
 	order, err := os.GetOrderByID(orderID)
 	fmt.Printf("order: %+v\n", order)
 	if err != nil {
 		return nil, err
 	}
+
 	order.CustomerName = req.CustomerName
 
 	if err := os.db.Save(&order).Error; err != nil {
 		return nil, err
 	}
-	return &req, nil
+
+	var items []models.Item
+
+	for _, item := range req.Items {
+		var itemModel models.Item
+		itemModel.ItemID = item.ItemID
+		itemModel.ItemCode = item.ItemCode
+		itemModel.Description = item.Description
+		itemModel.Quantity = item.Quantity
+		itemModel.OrderID = &order.OrderID
+		items = append(items, itemModel)
+	}
+
+	if err := os.db.Save(&items).Error; err != nil {
+		return nil, err
+	}
+
+	order.Items = items
+
+	return order, nil
 }
 
 func (os *OrderService) DeleteOrder(orderID uint) error {
