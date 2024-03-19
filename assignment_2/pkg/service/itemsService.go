@@ -13,8 +13,8 @@ func NewItemService(db *gorm.DB) *ItemService {
 	return &ItemService{db}
 }
 
-func (is *ItemService) GetAllItems() ([]models.GetAllItemRequest, error) {
-	var items []models.GetAllItemRequest
+func (is *ItemService) GetAllItems() ([]models.Item, error) {
+	var items []models.Item
 	if err := is.db.Find(&items).Error; err != nil {
 		return nil, err
 	}

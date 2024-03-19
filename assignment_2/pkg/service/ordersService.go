@@ -2,6 +2,7 @@ package service
 
 import (
 	"assignment_2/pkg/models"
+	"fmt"
 	"gorm.io/gorm"
 )
 
@@ -13,8 +14,8 @@ func NewOrderService(db *gorm.DB) *OrderService {
 	return &OrderService{db}
 }
 
-func (os *OrderService) GetAllOrders() ([]models.GetAllOrderRequest, error) {
-	var orders []models.GetAllOrderRequest
+func (os *OrderService) GetAllOrders() ([]models.Order, error) {
+	var orders []models.Order
 	if err := os.db.Preload("Items").Find(&orders).Error; err != nil {
 		return nil, err
 	}
@@ -32,7 +33,6 @@ func (os *OrderService) GetOrderByID(orderID uint) (*models.Order, error) {
 func (os *OrderService) CreateOrder(req models.CreateOrderRequest) (*models.CreateOrderRequest, error) {
 	order := models.CreateOrderRequest{
 		CustomerName: req.CustomerName,
-		Items:        req.Items,
 	}
 	if err := os.db.Create(&order).Error; err != nil {
 		return nil, err
@@ -42,11 +42,12 @@ func (os *OrderService) CreateOrder(req models.CreateOrderRequest) (*models.Crea
 
 func (os *OrderService) UpdateOrder(orderID uint, req models.UpdateOrderRequest) (*models.UpdateOrderRequest, error) {
 	order, err := os.GetOrderByID(orderID)
+	fmt.Printf("order: %+v\n", order)
 	if err != nil {
 		return nil, err
 	}
 	order.CustomerName = req.CustomerName
-	order.Items = req.Items
+
 	if err := os.db.Save(&order).Error; err != nil {
 		return nil, err
 	}
