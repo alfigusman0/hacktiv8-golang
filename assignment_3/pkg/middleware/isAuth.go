@@ -11,11 +11,15 @@ import (
 	"gorm.io/gorm"
 )
 
-type UsersService struct {
+type isJWT struct {
 	db *gorm.DB
 }
 
-func (us *UsersService) isAuth(ctx *gin.Context) {
+func NewIsJWT(db *gorm.DB) *isJWT {
+	return &isJWT{db: db}
+}
+
+func (i *isJWT) isAuth(ctx *gin.Context) {
 	getHeader := ctx.GetHeader("Authorization")
 	split := strings.Split(getHeader, "Bearer ")
 	errInvalidToken := errors.New("invalid token")
@@ -27,7 +31,7 @@ func (us *UsersService) isAuth(ctx *gin.Context) {
 	}
 	getToken := split[1]
 	var checkJwt models.Jwt
-	if err := us.db.Where("token = ?", getToken).First(&checkJwt).Error; err != nil {
+	if err := i.db.Where("token = ? and expired = ?", getToken, "TIDAK").First(&checkJwt).Error; err != nil {
 		ctx.AbortWithStatusJSON(401, gin.H{
 			"message": errInvalidToken.Error(),
 		})

@@ -26,8 +26,8 @@ func (u *UserController) Routes(r *gin.RouterGroup) {
 	routeGroup.DELETE("/:id", u.DeleteUser)
 
 	//signin and signout route
-	r.POST("/signin", u.SignIn)
-	r.POST("/signout", u.SignOut)
+	r.POST("/sign-in", u.SignIn)
+	r.POST("/sign-out", u.SignOut)
 }
 
 func (u *UserController) GetAllUsers(c *gin.Context) {

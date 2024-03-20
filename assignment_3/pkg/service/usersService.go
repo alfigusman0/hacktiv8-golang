@@ -4,8 +4,10 @@ import (
 	"assignment_3/pkg/helpers"
 	"assignment_3/pkg/models"
 	"fmt"
-	"gorm.io/gorm"
+	"log"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type UsersService struct {
@@ -68,12 +70,25 @@ func (us *UsersService) UpdateUser(userID uint, req models.UpdateUserRequest) (*
 	if err != nil {
 		return nil, err
 	}
+
+	log.Println("Username: ", req.Username)
+	// validation for unique username
+	if req.Username != nil {
+		var count int64
+		us.db.Model(&models.User{}).Where("username = ? AND id_user != ?", *req.Username, userID).Count(&count)
+		if count > 0 {
+			return nil, fmt.Errorf("username %s already exists", *req.Username)
+		}
+		user.Username = *req.Username
+	}
+
 	// check same password and confirm password
 	if req.Password != nil && req.ConfirmPassword != nil {
 		if *req.Password != *req.ConfirmPassword {
 			return nil, fmt.Errorf("password and confirm password not match")
 		}
 	}
+
 	// hash password
 	if req.Password != nil {
 		hashedPassword, err := helpers.HashPassword(*req.Password)
@@ -84,7 +99,6 @@ func (us *UsersService) UpdateUser(userID uint, req models.UpdateUserRequest) (*
 	}
 	// update user
 	user.Nama = req.Nama
-	user.Username = *req.Username
 	user.DateUpdated = time.Now()
 	if err := us.db.Save(&user).Error; err != nil {
 		return nil, err

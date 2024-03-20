@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"assignment_3/pkg/middleware"
 	"assignment_3/pkg/models"
 	"assignment_3/pkg/service"
 	"fmt"
@@ -21,7 +22,7 @@ func (i *ItemController) Routes(r *gin.RouterGroup) {
 	routeGroup := r.Group("/items")
 
 	routeGroup.GET("", i.GetAllItem)
-	routeGroup.POST("", i.CreateItem)
+	routeGroup.POST("", middleware.isAuth, i.CreateItem)
 	routeGroup.GET("/:id", i.GetItemByID)
 	routeGroup.PUT("/:id", i.UpdateItem)
 	routeGroup.DELETE("/:id", i.DeleteItem)

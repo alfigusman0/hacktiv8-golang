@@ -6,7 +6,7 @@ import (
 
 type Jwt struct {
 	ID          uint      `json:"id" gorm:"column:ids_jwt;primaryKey;autoIncrement"`
-	Header      string    `json:"header" gorm:"column:header"`
+	Header      string    `json:"header" gorm:"column:headers"`
 	IpAddr      string    `json:"ip_addr" gorm:"column:ip_address"`
 	Token       string    `json:"token" gorm:"column:token"`
 	ExpireAt    time.Time `json:"expire_at" gorm:"column:expire_at"`
