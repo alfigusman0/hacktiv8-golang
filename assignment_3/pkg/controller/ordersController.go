@@ -1,8 +1,8 @@
 package controller
 
 import (
-	"assignment_2/pkg/models"
-	"assignment_2/pkg/service"
+	"assignment_3/pkg/models"
+	"assignment_3/pkg/service"
 	"fmt"
 	"strconv"
 

@@ -4,14 +4,14 @@ import (
 	"log"
 	"os"
 
-	"assignment_2/pkg/database"
-	"assignment_2/pkg/routers"
+	"assignment_3/pkg/database"
+	"assignment_3/pkg/routers"
 	"github.com/joho/godotenv"
 )
 
 func main() {
 	// Load .env file
-	err := godotenv.Load(".env")
+	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}

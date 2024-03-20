@@ -1,8 +1,8 @@
 package routers
 
 import (
-	"assignment_2/pkg/controller"
-	"assignment_2/pkg/service"
+	"assignment_3/pkg/controller"
+	"assignment_3/pkg/service"
 	"database/sql"
 
 	"github.com/gin-gonic/gin"

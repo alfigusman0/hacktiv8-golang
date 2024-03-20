@@ -1,7 +1,7 @@
 package service
 
 import (
-	"assignment_2/pkg/models"
+	"assignment_3/pkg/models"
 	"fmt"
 	"gorm.io/gorm"
 	"time"
