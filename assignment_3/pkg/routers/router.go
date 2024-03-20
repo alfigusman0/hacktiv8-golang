@@ -2,6 +2,7 @@ package routers
 
 import (
 	"assignment_3/pkg/controller"
+	"assignment_3/pkg/middleware"
 	"assignment_3/pkg/service"
 	"database/sql"
 
@@ -22,15 +23,15 @@ func StartServer(db *sql.DB, gorm *gorm.DB) *gin.Engine {
 
 	orderService := service.NewOrderService(gorm)
 	orderController := controller.NewOrderController(orderService)
-	orderController.Routes(api)
+	orderController.Routes(api, middleware.IsAuth(gorm))
 
 	itemService := service.NewItemService(gorm)
 	itemController := controller.NewItemController(itemService)
-	itemController.Routes(api)
+	itemController.Routes(api, middleware.IsAuth(gorm))
 
 	usersService := service.NewUsersService(gorm)
 	userController := controller.NewUserController(usersService)
-	userController.Routes(api)
+	userController.Routes(api, middleware.IsAuth(gorm))
 
 	return r
 }

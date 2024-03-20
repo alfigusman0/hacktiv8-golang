@@ -17,14 +17,14 @@ func NewOrderController(service *service.OrderService) *OrderController {
 	return &OrderController{service: service}
 }
 
-func (o *OrderController) Routes(r *gin.RouterGroup) {
+func (o *OrderController) Routes(r *gin.RouterGroup, IsAuth gin.HandlerFunc) {
 	routeGroup := r.Group("/orders")
 
 	routeGroup.GET("", o.GetAllOrder)
-	routeGroup.POST("", o.CreateOrder)
+	routeGroup.POST("", IsAuth, o.CreateOrder)
 	routeGroup.GET("/:id", o.GetOrderByID)
-	routeGroup.PUT("/:id", o.UpdateOrder)
-	routeGroup.DELETE("/:id", o.DeleteOrder)
+	routeGroup.PUT("/:id", IsAuth, o.UpdateOrder)
+	routeGroup.DELETE("/:id", IsAuth, o.DeleteOrder)
 }
 
 func (o *OrderController) GetAllOrder(c *gin.Context) {

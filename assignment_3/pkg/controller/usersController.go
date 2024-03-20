@@ -3,7 +3,9 @@ package controller
 import (
 	"assignment_3/pkg/models"
 	"assignment_3/pkg/service"
+	"errors"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,14 +18,14 @@ func NewUserController(service *service.UsersService) *UserController {
 	return &UserController{service}
 }
 
-func (u *UserController) Routes(r *gin.RouterGroup) {
+func (u *UserController) Routes(r *gin.RouterGroup, IsAuth gin.HandlerFunc) {
 	routeGroup := r.Group("/users")
 
-	routeGroup.GET("", u.GetAllUsers)
-	routeGroup.POST("", u.CreateUser)
-	routeGroup.GET("/:id", u.GetUserByID)
-	routeGroup.PUT("/:id", u.UpdateUser)
-	routeGroup.DELETE("/:id", u.DeleteUser)
+	routeGroup.GET("", IsAuth, u.GetAllUsers)
+	routeGroup.POST("", IsAuth, u.CreateUser)
+	routeGroup.GET("/:id", IsAuth, u.GetUserByID)
+	routeGroup.PUT("/:id", IsAuth, u.UpdateUser)
+	routeGroup.DELETE("/:id", IsAuth, u.DeleteUser)
 
 	//signin and signout route
 	r.POST("/sign-in", u.SignIn)
@@ -115,12 +117,21 @@ func (u *UserController) SignIn(c *gin.Context) {
 }
 
 func (u *UserController) SignOut(c *gin.Context) {
-	token := c.GetHeader("Authorization")
-	if token == "" {
+	getHeader := c.GetHeader("Authorization")
+	if getHeader == "" {
 		c.JSON(400, gin.H{"error": "token not found"})
 		return
 	}
-	err := u.service.SignOut(token)
+	split := strings.Split(getHeader, "Bearer ")
+	errInvalidToken := errors.New("invalid token")
+	if len(split) != 2 {
+		c.AbortWithStatusJSON(401, gin.H{
+			"message": errInvalidToken.Error(),
+		})
+		return
+	}
+	getToken := split[1]
+	err := u.service.SignOut(getToken)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return

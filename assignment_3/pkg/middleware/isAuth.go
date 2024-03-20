@@ -3,6 +3,7 @@ package middleware
 import (
 	"assignment_3/pkg/models"
 	"errors"
+	"log"
 	"os"
 	"strings"
 
@@ -11,50 +12,47 @@ import (
 	"gorm.io/gorm"
 )
 
-type isJWT struct {
-	db *gorm.DB
-}
-
-func NewIsJWT(db *gorm.DB) *isJWT {
-	return &isJWT{db: db}
-}
-
-func (i *isJWT) isAuth(ctx *gin.Context) {
-	getHeader := ctx.GetHeader("Authorization")
-	split := strings.Split(getHeader, "Bearer ")
-	errInvalidToken := errors.New("invalid token")
-	if len(split) != 2 {
-		ctx.AbortWithStatusJSON(401, gin.H{
-			"message": errInvalidToken.Error(),
-		})
-		return
-	}
-	getToken := split[1]
-	var checkJwt models.Jwt
-	if err := i.db.Where("token = ? and expired = ?", getToken, "TIDAK").First(&checkJwt).Error; err != nil {
-		ctx.AbortWithStatusJSON(401, gin.H{
-			"message": errInvalidToken.Error(),
-		})
-		return
-	}
-	validated, err := jwt.Parse(getToken, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errInvalidToken
+func IsAuth(db *gorm.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		getHeader := ctx.GetHeader("Authorization")
+		split := strings.Split(getHeader, "Bearer ")
+		log.Println(split)
+		errInvalidToken := errors.New("invalid token")
+		if len(split) != 2 {
+			ctx.AbortWithStatusJSON(401, gin.H{
+				"message": errInvalidToken.Error(),
+			})
+			return
 		}
-		return []byte(os.Getenv("JWT_SECRET")), nil
-	})
-	if err != nil {
-		ctx.AbortWithStatusJSON(401, gin.H{
-			"message": errInvalidToken.Error(),
+		getToken := split[1]
+		var checkJwt models.Jwt
+		err := db.Where("token = ? and expired = ?", getToken, "TIDAK").First(&checkJwt).Error
+		log.Println(err)
+		if err != nil {
+			ctx.AbortWithStatusJSON(401, gin.H{
+				"message": errInvalidToken.Error(),
+			})
+			return
+		}
+		validated, err := jwt.Parse(getToken, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, errInvalidToken
+			}
+			return []byte(os.Getenv("JWT_SECRET")), nil
 		})
-		return
+		if err != nil {
+			ctx.AbortWithStatusJSON(401, gin.H{
+				"message verify": errInvalidToken.Error(),
+			})
+			return
+		}
+		if _, ok := validated.Claims.(jwt.MapClaims); !ok && !validated.Valid {
+			ctx.AbortWithStatusJSON(401, gin.H{
+				"message": errInvalidToken.Error(),
+			})
+			return
+		}
+		ctx.Set("user", validated.Claims.(jwt.MapClaims))
+		ctx.Next()
 	}
-	if _, ok := validated.Claims.(jwt.MapClaims); !ok && !validated.Valid {
-		ctx.AbortWithStatusJSON(401, gin.H{
-			"message": errInvalidToken.Error(),
-		})
-		return
-	}
-	ctx.Set("user", validated.Claims.(jwt.MapClaims))
-	ctx.Next()
 }

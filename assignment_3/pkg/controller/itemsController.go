@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"assignment_3/pkg/middleware"
 	"assignment_3/pkg/models"
 	"assignment_3/pkg/service"
 	"fmt"
@@ -18,14 +17,14 @@ func NewItemController(service *service.ItemService) *ItemController {
 	return &ItemController{service: service}
 }
 
-func (i *ItemController) Routes(r *gin.RouterGroup) {
+func (i *ItemController) Routes(r *gin.RouterGroup, IsAuth gin.HandlerFunc) {
 	routeGroup := r.Group("/items")
 
 	routeGroup.GET("", i.GetAllItem)
-	routeGroup.POST("", middleware.isAuth, i.CreateItem)
+	routeGroup.POST("", IsAuth, i.CreateItem)
 	routeGroup.GET("/:id", i.GetItemByID)
-	routeGroup.PUT("/:id", i.UpdateItem)
-	routeGroup.DELETE("/:id", i.DeleteItem)
+	routeGroup.PUT("/:id", IsAuth, i.UpdateItem)
+	routeGroup.DELETE("/:id", IsAuth, i.DeleteItem)
 }
 
 func (i *ItemController) GetAllItem(c *gin.Context) {
