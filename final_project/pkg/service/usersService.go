@@ -7,7 +7,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"gorm.io/gorm"
 )
 
@@ -57,6 +56,7 @@ func (us *UsersService) CreateUser(req models.CreateUserRequest) (*models.User, 
 		Nama:        req.Nama,
 		Username:    req.Username,
 		Password:    hashedPassword,
+		Role:        req.Role,
 		DateCreated: now,
 		DateUpdated: now,
 	}
