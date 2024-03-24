@@ -4,6 +4,7 @@ import (
 	"errors"
 	"final_project/pkg/models"
 	"final_project/pkg/service"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -34,28 +35,6 @@ func (u *UserController) Routes(r *gin.RouterGroup, IsAuth gin.HandlerFunc) {
 	r.POST("/sign-out", u.SignOut)
 }
 
-func (u *UserController) GetAllUsers(c *gin.Context) {
-	duser, _ := c.Get("user")
-	userData := duser.(jwt.MapClaims)
-	if userData["roles"] == "ADMIN" {
-		c.JSON(http.StatusForbidden, gin.H{
-			"code":    http.StatusForbidden,
-			"status":  "error",
-			"message": "Access Denied!",
-		})
-		return
-	}
-	users, err := u.service.GetAllUsers()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    http.StatusInternalServerError,
-			"status":  "error",
-			"message": err.Error(),
-		})
-	}
-	c.JSON(200, users)
-}
-
 func (u *UserController) CreateUser(c *gin.Context) {
 	duser, _ := c.Get("user")
 	userData := duser.(jwt.MapClaims)
@@ -76,6 +55,7 @@ func (u *UserController) CreateUser(c *gin.Context) {
 		})
 		return
 	}
+
 	createdUser, err := u.service.CreateUser(user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -89,25 +69,15 @@ func (u *UserController) CreateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code":    http.StatusOK,
 		"status":  "success",
-		"message": "",
+		"message": "user created",
 		"data":    createdUser,
 	})
 }
 
-func (u *UserController) GetUserByID(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
-			"status":  "error",
-			"message": err.Error(),
-		})
-		return
-	}
-
+func (u *UserController) GetAllUsers(c *gin.Context) {
 	duser, _ := c.Get("user")
 	userData := duser.(jwt.MapClaims)
-	if userData["UserID"] != id && userData["roles"] == "ADMIN" {
+	if userData["roles"] == "ADMIN" {
 		c.JSON(http.StatusForbidden, gin.H{
 			"code":    http.StatusForbidden,
 			"status":  "error",
@@ -115,22 +85,19 @@ func (u *UserController) GetUserByID(c *gin.Context) {
 		})
 		return
 	}
-
-	user, err := u.service.GetUserByID(uint(id))
+	users, err := u.service.GetAllUsers()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    http.StatusInternalServerError,
 			"status":  "error",
 			"message": err.Error(),
 		})
-		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{
 		"code":    http.StatusOK,
 		"status":  "success",
 		"message": "",
-		"data":    user,
+		"data":    users,
 	})
 }
 
@@ -146,11 +113,12 @@ func (u *UserController) UpdateUser(c *gin.Context) {
 	}
 	duser, _ := c.Get("user")
 	userData := duser.(jwt.MapClaims)
-	if userData["UserID"] != id && userData["roles"] == "ADMIN" {
+	idUser := uint(userData["id"].(float64))
+	if uint64(idUser) != id && userData["roles"] == "ADMIN" {
 		c.JSON(http.StatusForbidden, gin.H{
 			"code":    http.StatusForbidden,
 			"status":  "error",
-			"message": "Access Denied!",
+			"message": "Access Denied!, you can only update your own data.",
 		})
 		return
 	}
@@ -163,6 +131,12 @@ func (u *UserController) UpdateUser(c *gin.Context) {
 		})
 		return
 	}
+
+	// if userData is admin, then user can not update roles
+	if userData["roles"] == "ADMIN" {
+		user.Roles = nil
+	}
+
 	updatedUser, err := u.service.UpdateUser(uint(id), user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -176,7 +150,7 @@ func (u *UserController) UpdateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code":    http.StatusOK,
 		"status":  "success",
-		"message": "",
+		"message": "user updated.",
 		"data":    updatedUser,
 	})
 }
@@ -215,6 +189,46 @@ func (u *UserController) DeleteUser(c *gin.Context) {
 		"code":    http.StatusOK,
 		"status":  "success",
 		"message": "user deleted",
+	})
+}
+
+func (u *UserController) GetUserByID(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"status":  "error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	duser, _ := c.Get("user")
+	userData := duser.(jwt.MapClaims)
+	if userData["id"] != id && userData["roles"] == "ADMIN" {
+		c.JSON(http.StatusForbidden, gin.H{
+			"code":    http.StatusForbidden,
+			"status":  "error",
+			"message": "Access Denied!",
+		})
+		return
+	}
+
+	user, err := u.service.GetUserByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    http.StatusInternalServerError,
+			"status":  "error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    http.StatusOK,
+		"status":  "success",
+		"message": "",
+		"data":    user,
 	})
 }
 

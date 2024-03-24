@@ -18,22 +18,6 @@ func NewUsersService(db *gorm.DB) *UsersService {
 	return &UsersService{db}
 }
 
-func (us *UsersService) GetAllUsers() ([]models.User, error) {
-	var users []models.User
-	if err := us.db.Find(&users).Error; err != nil {
-		return nil, err
-	}
-	return users, nil
-}
-
-func (us *UsersService) GetUserByID(userID uint) (*models.User, error) {
-	var user models.User
-	if err := us.db.First(&user, userID).Error; err != nil {
-		return nil, err
-	}
-	return &user, nil
-}
-
 func (us *UsersService) CreateUser(req models.CreateUserRequest) (*models.User, error) {
 	var count int64
 	now := time.Now()
@@ -52,6 +36,11 @@ func (us *UsersService) CreateUser(req models.CreateUserRequest) (*models.User, 
 		return nil, err
 	}
 
+	//validation roles
+	if req.Roles != "ADMIN" && req.Roles != "SUPER ADMIN" {
+		return nil, fmt.Errorf("roles must be ADMIN or SUPER ADMIN")
+	}
+
 	user := models.User{
 		Nama:        req.Nama,
 		Username:    req.Username,
@@ -64,6 +53,14 @@ func (us *UsersService) CreateUser(req models.CreateUserRequest) (*models.User, 
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (us *UsersService) GetAllUsers() ([]models.User, error) {
+	var users []models.User
+	if err := us.db.Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
 }
 
 func (us *UsersService) UpdateUser(userID uint, req models.UpdateUserRequest) (*models.User, error) {
@@ -98,6 +95,15 @@ func (us *UsersService) UpdateUser(userID uint, req models.UpdateUserRequest) (*
 		}
 		user.Password = hashedPassword
 	}
+
+	//validation roles
+	if req.Roles != nil {
+		if *req.Roles != "ADMIN" && *req.Roles != "SUPER ADMIN" {
+			return nil, fmt.Errorf("roles must be ADMIN or SUPER ADMIN")
+		}
+		user.Roles = *req.Roles
+	}
+
 	// update user
 	user.Nama = req.Nama
 	user.DateUpdated = time.Now()
@@ -116,6 +122,14 @@ func (us *UsersService) DeleteUser(userID uint) error {
 		return err
 	}
 	return nil
+}
+
+func (us *UsersService) GetUserByID(userID uint) (*models.User, error) {
+	var user models.User
+	if err := us.db.First(&user, userID).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 // sign-in function and generate token jwt

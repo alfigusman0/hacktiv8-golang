@@ -4,6 +4,7 @@ import (
 	"errors"
 	"final_project/pkg/models"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 
@@ -20,6 +21,8 @@ func IsAuth(db *gorm.DB) gin.HandlerFunc {
 		errInvalidToken := errors.New("invalid token")
 		if len(split) != 2 {
 			ctx.AbortWithStatusJSON(401, gin.H{
+				"code":    http.StatusUnauthorized,
+				"status":  "error",
 				"message": errInvalidToken.Error(),
 			})
 			return
@@ -27,9 +30,11 @@ func IsAuth(db *gorm.DB) gin.HandlerFunc {
 		getToken := split[1]
 		var checkJwt models.Jwt
 		err := db.Where("token = ? and expired = ?", getToken, "TIDAK").First(&checkJwt).Error
-		log.Println(err)
 		if err != nil {
-			ctx.AbortWithStatusJSON(401, gin.H{
+			log.Println(err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"code":    http.StatusInternalServerError,
+				"status":  "error",
 				"message": errInvalidToken.Error(),
 			})
 			return
@@ -41,13 +46,19 @@ func IsAuth(db *gorm.DB) gin.HandlerFunc {
 			return []byte(os.Getenv("JWT_SECRET")), nil
 		})
 		if err != nil {
-			ctx.AbortWithStatusJSON(401, gin.H{
-				"message verify": errInvalidToken.Error(),
+			log.Println(err)
+			ctx.JSON(http.StatusUnauthorized, gin.H{
+				"code":    http.StatusUnauthorized,
+				"status":  "error",
+				"message": errInvalidToken.Error(),
 			})
 			return
 		}
 		if _, ok := validated.Claims.(jwt.MapClaims); !ok && !validated.Valid {
-			ctx.AbortWithStatusJSON(401, gin.H{
+			log.Println(err)
+			ctx.JSON(http.StatusUnauthorized, gin.H{
+				"code":    http.StatusUnauthorized,
+				"status":  "error",
 				"message": errInvalidToken.Error(),
 			})
 			return
