@@ -35,24 +35,39 @@ func (os *OrderService) CreateOrder(req models.CreateOrderRequest) (*models.Orde
 	now := time.Now()
 	order := models.Order{
 		CustomerName: req.CustomerName,
-		OrderedAt:    now,
+		TmpTotal:     0,
+		Potongan:     req.Potongan,
+		Total:        0,
+		DateCreated:  now,
+		DateUpdated:  now,
 	}
 	if err := os.db.Create(&order).Error; err != nil {
 		return nil, err
 	}
 
 	var items []models.Item
+	tmptotal := 0.0
+	total := 0.0
 
 	for _, item := range req.Items {
 		var itemModel models.Item
-		itemModel.ItemCode = item.ItemCode
-		itemModel.Description = item.Description
-		itemModel.Quantity = item.Quantity
-		itemModel.OrderID = &order.OrderID
+		itemModel.OrderID = order.OrderID
+		itemModel.ProductID = item.ProductID
+		itemModel.Harga = item.Harga
+		itemModel.Jumlah = item.Jumlah
+		itemModel.SubTotal = item.Harga * float64(item.Jumlah)
+		tmptotal += itemModel.SubTotal
 		items = append(items, itemModel)
 	}
 
 	if err := os.db.Create(&items).Error; err != nil {
+		return nil, err
+	}
+
+	total = tmptotal - req.Potongan
+	order.TmpTotal = tmptotal
+	order.Total = total
+	if err := os.db.Save(&order).Error; err != nil {
 		return nil, err
 	}
 
@@ -74,18 +89,28 @@ func (os *OrderService) UpdateOrder(orderID uint, req models.UpdateOrderRequest)
 	}
 
 	var items []models.Item
+	tmptotal := 0.0
+	total := 0.0
 
 	for _, item := range req.Items {
 		var itemModel models.Item
-		itemModel.ItemID = item.ItemID
-		itemModel.ItemCode = item.ItemCode
-		itemModel.Description = item.Description
-		itemModel.Quantity = item.Quantity
-		itemModel.OrderID = &order.OrderID
+		itemModel.OrderID = order.OrderID
+		itemModel.ProductID = item.ProductID
+		itemModel.Harga = item.Harga
+		itemModel.Jumlah = item.Jumlah
+		itemModel.SubTotal = item.Harga * float64(item.Jumlah)
+		tmptotal += itemModel.SubTotal
 		items = append(items, itemModel)
 	}
 
 	if err := os.db.Save(&items).Error; err != nil {
+		return nil, err
+	}
+
+	total = tmptotal - order.Potongan
+	order.TmpTotal = tmptotal
+	order.Total = total
+	if err := os.db.Save(&order).Error; err != nil {
 		return nil, err
 	}
 

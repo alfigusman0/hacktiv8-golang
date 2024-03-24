@@ -31,12 +31,33 @@ func (is *ItemService) GetItem(itemID uint) (*models.Item, error) {
 
 func (is *ItemService) CreateItem(req models.CreateItemRequest) (*models.Item, error) {
 	item := models.Item{
-		ItemCode:    req.ItemCode,
-		Description: req.Description,
-		Quantity:    req.Quantity,
-		OrderID:     req.OrderID,
+		OrderID:   req.OrderID,
+		ProductID: req.ProductID,
+		Harga:     req.Harga,
+		Jumlah:    req.Jumlah,
+		SubTotal:  req.Harga * float64(req.Jumlah),
 	}
 	if err := is.db.Create(&item).Error; err != nil {
+		return nil, err
+	}
+
+	var order models.Order
+	if err := is.db.First(&order, item.OrderID).Error; err != nil {
+		return nil, err
+	}
+	tmptotal := 0.0
+	total := 0.0
+	items, err := is.GetAllItems()
+	if err != nil {
+		return nil, err
+	}
+	for _, item := range items {
+		tmptotal += item.SubTotal
+	}
+	total = tmptotal - order.Potongan
+	order.TmpTotal = tmptotal
+	order.Total = total
+	if err := is.db.Save(&order).Error; err != nil {
 		return nil, err
 	}
 	return &item, nil
@@ -47,14 +68,37 @@ func (is *ItemService) UpdateItem(itemID uint, req models.UpdateItemRequest) (*m
 	if err != nil {
 		return nil, err
 	}
-	item.ItemID = req.ItemID
-	item.ItemCode = req.ItemCode
-	item.Description = req.Description
-	item.Quantity = req.Quantity
+
 	item.OrderID = req.OrderID
+	item.ProductID = req.ProductID
+	item.Harga = req.Harga
+	item.Jumlah = req.Jumlah
+	item.SubTotal = req.Harga * float64(req.Jumlah)
+
 	if err := is.db.Save(&item).Error; err != nil {
 		return nil, err
 	}
+
+	var order models.Order
+	if err := is.db.First(&order, item.OrderID).Error; err != nil {
+		return nil, err
+	}
+	tmptotal := 0.0
+	total := 0.0
+	items, err := is.GetAllItems()
+	if err != nil {
+		return nil, err
+	}
+	for _, item := range items {
+		tmptotal += item.SubTotal
+	}
+	total = tmptotal - order.Potongan
+	order.TmpTotal = tmptotal
+	order.Total = total
+	if err := is.db.Save(&order).Error; err != nil {
+		return nil, err
+	}
+
 	return item, nil
 }
 

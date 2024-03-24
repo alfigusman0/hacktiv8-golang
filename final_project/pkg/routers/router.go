@@ -29,6 +29,10 @@ func StartServer(db *sql.DB, gorm *gorm.DB) *gin.Engine {
 	itemController := controller.NewItemController(itemService)
 	itemController.Routes(api, middleware.IsAuth(gorm))
 
+	productService := service.NewProductService(gorm)
+	productController := controller.NewProductController(productService)
+	productController.Routes(api, middleware.IsAuth(gorm))
+
 	usersService := service.NewUsersService(gorm)
 	userController := controller.NewUserController(usersService)
 	userController.Routes(api, middleware.IsAuth(gorm))
