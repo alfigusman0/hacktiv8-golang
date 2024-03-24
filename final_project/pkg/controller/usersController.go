@@ -37,7 +37,7 @@ func (u *UserController) Routes(r *gin.RouterGroup, IsAuth gin.HandlerFunc) {
 func (u *UserController) GetAllUsers(c *gin.Context) {
 	duser, _ := c.Get("user")
 	userData := duser.(jwt.MapClaims)
-	if userData["role"] != "ADMIN" {
+	if userData["roles"] == "ADMIN" {
 		c.JSON(http.StatusForbidden, gin.H{
 			"code":    http.StatusForbidden,
 			"status":  "error",
@@ -59,7 +59,7 @@ func (u *UserController) GetAllUsers(c *gin.Context) {
 func (u *UserController) CreateUser(c *gin.Context) {
 	duser, _ := c.Get("user")
 	userData := duser.(jwt.MapClaims)
-	if userData["role"] != "ADMIN" {
+	if userData["roles"] == "ADMIN" {
 		c.JSON(http.StatusForbidden, gin.H{
 			"code":    http.StatusForbidden,
 			"status":  "error",
@@ -107,7 +107,7 @@ func (u *UserController) GetUserByID(c *gin.Context) {
 
 	duser, _ := c.Get("user")
 	userData := duser.(jwt.MapClaims)
-	if userData["UserID"] != id && userData["role"] == "ADMIN" {
+	if userData["UserID"] != id && userData["roles"] == "ADMIN" {
 		c.JSON(http.StatusForbidden, gin.H{
 			"code":    http.StatusForbidden,
 			"status":  "error",
@@ -146,7 +146,7 @@ func (u *UserController) UpdateUser(c *gin.Context) {
 	}
 	duser, _ := c.Get("user")
 	userData := duser.(jwt.MapClaims)
-	if userData["UserID"] != id && userData["role"] == "ADMIN" {
+	if userData["UserID"] != id && userData["roles"] == "ADMIN" {
 		c.JSON(http.StatusForbidden, gin.H{
 			"code":    http.StatusForbidden,
 			"status":  "error",
@@ -184,7 +184,7 @@ func (u *UserController) UpdateUser(c *gin.Context) {
 func (u *UserController) DeleteUser(c *gin.Context) {
 	duser, _ := c.Get("user")
 	userData := duser.(jwt.MapClaims)
-	if userData["role"] != "ADMIN" {
+	if userData["roles"] == "ADMIN" {
 		c.JSON(http.StatusForbidden, gin.H{
 			"code":    http.StatusForbidden,
 			"status":  "error",

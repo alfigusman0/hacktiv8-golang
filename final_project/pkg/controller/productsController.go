@@ -30,7 +30,7 @@ func (pc *ProductController) Routes(r *gin.RouterGroup, IsAuth gin.HandlerFunc) 
 func (pc *ProductController) GetAllProducts(c *gin.Context) {
 	duser, _ := c.Get("user")
 	userData := duser.(jwt.MapClaims)
-	if userData["role"] != "SUPER ADMIN" {
+	if userData["roles"] != "SUPER ADMIN" {
 		products, err := pc.service.GetAllProducts()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -79,7 +79,7 @@ func (pc *ProductController) GetProduct(c *gin.Context) {
 
 	duser, _ := c.Get("user")
 	userData := duser.(jwt.MapClaims)
-	if userData["role"] != "SUPER ADMIN" {
+	if userData["roles"] != "SUPER ADMIN" {
 		product, err := pc.service.GetProductByID(uint(id))
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -163,7 +163,7 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 	}
 	duser, _ := c.Get("user")
 	userData := duser.(jwt.MapClaims)
-	if userData["role"] != "SUPER ADMIN" {
+	if userData["roles"] != "SUPER ADMIN" {
 		product, err := pc.service.UpdateProduct(uint(id), req)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -212,7 +212,7 @@ func (pc *ProductController) DeleteProduct(c *gin.Context) {
 	}
 	duser, _ := c.Get("user")
 	userData := duser.(jwt.MapClaims)
-	if userData["role"] != "SUPER ADMIN" {
+	if userData["roles"] != "SUPER ADMIN" {
 		err = pc.service.DeleteProduct(uint(id))
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
