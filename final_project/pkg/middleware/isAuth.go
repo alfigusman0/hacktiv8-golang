@@ -17,7 +17,6 @@ func IsAuth(db *gorm.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		getHeader := ctx.GetHeader("Authorization")
 		split := strings.Split(getHeader, "Bearer ")
-		log.Println(split)
 		errInvalidToken := errors.New("invalid token")
 		if len(split) != 2 {
 			ctx.AbortWithStatusJSON(401, gin.H{

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"final_project/pkg/models"
 	"final_project/pkg/service"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -205,11 +204,12 @@ func (u *UserController) GetUserByID(c *gin.Context) {
 
 	duser, _ := c.Get("user")
 	userData := duser.(jwt.MapClaims)
-	if userData["id"] != id && userData["roles"] == "ADMIN" {
+	idUser := uint(userData["id"].(float64))
+	if uint64(idUser) != id && userData["roles"] == "ADMIN" {
 		c.JSON(http.StatusForbidden, gin.H{
 			"code":    http.StatusForbidden,
 			"status":  "error",
-			"message": "Access Denied!",
+			"message": "Access Denied!, you can only see your own data.",
 		})
 		return
 	}
