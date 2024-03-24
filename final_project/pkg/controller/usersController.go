@@ -38,8 +38,8 @@ func (u *UserController) GetAllUsers(c *gin.Context) {
 	duser, _ := c.Get("user")
 	userData := duser.(jwt.MapClaims)
 	if userData["role"] != "ADMIN" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
+		c.JSON(http.StatusForbidden, gin.H{
+			"code":    http.StatusForbidden,
 			"status":  "error",
 			"message": "Access Denied!",
 		})
@@ -47,8 +47,8 @@ func (u *UserController) GetAllUsers(c *gin.Context) {
 	}
 	users, err := u.service.GetAllUsers()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    http.StatusInternalServerError,
 			"status":  "error",
 			"message": err.Error(),
 		})
@@ -60,8 +60,8 @@ func (u *UserController) CreateUser(c *gin.Context) {
 	duser, _ := c.Get("user")
 	userData := duser.(jwt.MapClaims)
 	if userData["role"] != "ADMIN" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
+		c.JSON(http.StatusForbidden, gin.H{
+			"code":    http.StatusForbidden,
 			"status":  "error",
 			"message": "Access Denied!",
 		})
@@ -78,8 +78,8 @@ func (u *UserController) CreateUser(c *gin.Context) {
 	}
 	createdUser, err := u.service.CreateUser(user)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    http.StatusInternalServerError,
 			"status":  "error",
 			"message": err.Error(),
 		})
@@ -108,8 +108,8 @@ func (u *UserController) GetUserByID(c *gin.Context) {
 	duser, _ := c.Get("user")
 	userData := duser.(jwt.MapClaims)
 	if userData["UserID"] != id && userData["role"] == "ADMIN" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
+		c.JSON(http.StatusForbidden, gin.H{
+			"code":    http.StatusForbidden,
 			"status":  "error",
 			"message": "Access Denied!",
 		})
@@ -118,8 +118,8 @@ func (u *UserController) GetUserByID(c *gin.Context) {
 
 	user, err := u.service.GetUserByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    http.StatusInternalServerError,
 			"status":  "error",
 			"message": err.Error(),
 		})
@@ -147,8 +147,8 @@ func (u *UserController) UpdateUser(c *gin.Context) {
 	duser, _ := c.Get("user")
 	userData := duser.(jwt.MapClaims)
 	if userData["UserID"] != id && userData["role"] == "ADMIN" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
+		c.JSON(http.StatusForbidden, gin.H{
+			"code":    http.StatusForbidden,
 			"status":  "error",
 			"message": "Access Denied!",
 		})
@@ -165,8 +165,8 @@ func (u *UserController) UpdateUser(c *gin.Context) {
 	}
 	updatedUser, err := u.service.UpdateUser(uint(id), user)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    http.StatusInternalServerError,
 			"status":  "error",
 			"message": err.Error(),
 		})
@@ -185,8 +185,8 @@ func (u *UserController) DeleteUser(c *gin.Context) {
 	duser, _ := c.Get("user")
 	userData := duser.(jwt.MapClaims)
 	if userData["role"] != "ADMIN" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
+		c.JSON(http.StatusForbidden, gin.H{
+			"code":    http.StatusForbidden,
 			"status":  "error",
 			"message": "Access Denied!",
 		})
@@ -203,8 +203,8 @@ func (u *UserController) DeleteUser(c *gin.Context) {
 	}
 	err = u.service.DeleteUser(uint(id))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    http.StatusInternalServerError,
 			"status":  "error",
 			"message": err.Error(),
 		})
@@ -230,8 +230,8 @@ func (u *UserController) SignIn(c *gin.Context) {
 	}
 	token, err := u.service.SignIn(signInRequest, c.GetHeader("User-Agent"), c.ClientIP())
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    http.StatusInternalServerError,
 			"status":  "error",
 			"message": err.Error(),
 		})
@@ -268,8 +268,8 @@ func (u *UserController) SignOut(c *gin.Context) {
 	getToken := split[1]
 	err := u.service.SignOut(getToken)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    http.StatusInternalServerError,
 			"status":  "error",
 			"message": err.Error(),
 		})

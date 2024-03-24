@@ -22,9 +22,25 @@ func (ps *ProductService) GetAllProducts() ([]models.Product, error) {
 	return products, nil
 }
 
+func (ps *ProductService) GetAllProductsByCreatedBy(userID uint) ([]models.Product, error) {
+	var products []models.Product
+	if err := ps.db.Where("created_by = ?", userID).Find(&products).Error; err != nil {
+		return nil, err
+	}
+	return products, nil
+}
+
 func (ps *ProductService) GetProductByID(productID uint) (*models.Product, error) {
 	var product models.Product
 	if err := ps.db.First(&product, productID).Error; err != nil {
+		return nil, err
+	}
+	return &product, nil
+}
+
+func (ps *ProductService) GetProductByIDAndCreatedBy(productID uint, userID uint) (*models.Product, error) {
+	var product models.Product
+	if err := ps.db.Where("created_by = ?", userID).First(&product, productID).Error; err != nil {
 		return nil, err
 	}
 	return &product, nil
@@ -58,9 +74,35 @@ func (ps *ProductService) UpdateProduct(productID uint, req models.UpdateProduct
 	return &product, nil
 }
 
+func (ps *ProductService) UpdateProductByCreatedBy(productID uint, userID uint, req models.UpdateProductRequest) (*models.Product, error) {
+	var product models.Product
+	if err := ps.db.Where("created_by = ?", userID).First(&product, productID).Error; err != nil {
+		return nil, err
+	}
+	product.ProductName = req.ProductName
+	product.HargaBeli = req.HargaBeli
+	product.HargaJual = req.HargaJual
+	product.Stok = req.Stok
+	if err := ps.db.Save(&product).Error; err != nil {
+		return nil, err
+	}
+	return &product, nil
+}
+
 func (ps *ProductService) DeleteProduct(productID uint) error {
 	var product models.Product
 	if err := ps.db.First(&product, productID).Error; err != nil {
+		return err
+	}
+	if err := ps.db.Delete(&product).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (ps *ProductService) DeleteProductByCreatedBy(productID uint, userID uint) error {
+	var product models.Product
+	if err := ps.db.Where("created_by = ?", userID).First(&product, productID).Error; err != nil {
 		return err
 	}
 	if err := ps.db.Delete(&product).Error; err != nil {
