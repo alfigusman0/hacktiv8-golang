@@ -56,7 +56,7 @@ func (us *UsersService) CreateUser(req models.CreateUserRequest) (*models.User, 
 		Nama:        req.Nama,
 		Username:    req.Username,
 		Password:    hashedPassword,
-		Role:        req.Role,
+		Roles:       req.Roles,
 		DateCreated: now,
 		DateUpdated: now,
 	}
@@ -129,7 +129,7 @@ func (us *UsersService) SignIn(req models.SignInRequest, Header string, IpAddr s
 	if !helpers.ComparePassword(user.Password, req.Password) {
 		return "", fmt.Errorf("invalid password")
 	}
-	token, err := helpers.GenerateToken(user.UserID, user.Nama, user.Username)
+	token, err := helpers.GenerateToken(user)
 	if err != nil {
 		return "", err
 	}

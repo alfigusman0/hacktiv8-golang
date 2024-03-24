@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"final_project/pkg/models"
 	"os"
 	"time"
 
@@ -22,18 +23,20 @@ func ComparePassword(hashedPassword, password string) bool {
 
 type UsersClaims struct {
 	Unik     int64  `json:"unik"`
-	ID       uint   `json:"id"`
+	UserID   uint   `json:"id"`
 	Nama     string `json:"nama"`
 	Username string `json:"username"`
+	Roles    string `json:"roles"`
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(id uint, nama string, username string) (string, error) {
+func GenerateToken(user models.User) (string, error) {
 	claims := UsersClaims{
 		Unik:     time.Now().Unix(),
-		ID:       id,
-		Nama:     nama,
-		Username: username,
+		UserID:   user.UserID,
+		Nama:     user.Nama,
+		Username: user.Username,
+		Roles:    user.Roles,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

@@ -4,7 +4,7 @@ import (
 	"final_project/pkg/models"
 	"final_project/pkg/service"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 	"net/http"
 	"strconv"
 )
