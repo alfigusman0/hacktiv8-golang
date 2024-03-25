@@ -30,11 +30,18 @@ type GetAllOrderRequest struct {
 type CreateOrderRequest struct {
 	CustomerName string              `json:"customer_name" binding:"required"`
 	Items        []CreateItemRequest `json:"items" binding:"required"`
-	Potongan     int                 `json:"potongan" binding:"required"`
+	TmpTotal     int                 `json:"tmp_total"`
+	Potongan     int                 `json:"potongan"`
+	Total        int                 `json:"total"`
+	CreatedBy    uint                `json:"created_by"`
+	UpdatedBy    uint                `json:"updated_by"`
 }
 
 type UpdateOrderRequest struct {
 	CustomerName string              `json:"customer_name"`
 	Items        []UpdateItemRequest `json:"items"`
+	TmpTotal     int                 `json:"tmp_total"`
 	Potongan     int                 `json:"potongan"`
+	Total        int                 `json:"total"`
+	UpdatedBy    uint                `json:"updated_by"`
 }

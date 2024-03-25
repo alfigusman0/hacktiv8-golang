@@ -28,20 +28,21 @@ type GetAllItemRequest struct {
 }
 
 type CreateItemRequest struct {
-	OrderID     uint `json:"id_order" bidnding:"required"`
-	ProductID   uint `json:"id_product" bidnding:"required"`
-	Harga       int  `json:"harga"`
-	Jumlah      int  `json:"jumlah" bidnding:"required"`
-	SubTotal    int  `json:"sub_total"`
-	CreatedByID uint `json:"created_by"`
-	UpdatedByID uint `json:"updated_by"`
+	OrderID   uint `json:"id_order"`
+	ProductID uint `json:"id_product" bidnding:"required"`
+	Harga     int  `json:"harga"`
+	Jumlah    int  `json:"jumlah" bidnding:"required"`
+	SubTotal  int  `json:"sub_total"`
+	CreatedBy uint `json:"created_by"`
+	UpdatedBy uint `json:"updated_by"`
 }
 
 type UpdateItemRequest struct {
-	OrderID     uint `json:"id_order" bidnding:"required"`
-	ProductID   uint `json:"id_product" bidnding:"required"`
-	Harga       int  `json:"harga"`
-	Jumlah      int  `json:"jumlah" bidnding:"required"`
-	SubTotal    int  `json:"sub_total"`
-	UpdatedByID uint `json:"updated_by"`
+	ItemID    uint `json:"id_item" bidnding:"required"`
+	OrderID   uint `json:"id_order"`
+	ProductID uint `json:"id_product" bidnding:"required"`
+	Harga     int  `json:"harga"`
+	Jumlah    int  `json:"jumlah" bidnding:"required"`
+	SubTotal  int  `json:"sub_total"`
+	UpdatedBy uint `json:"updated_by"`
 }

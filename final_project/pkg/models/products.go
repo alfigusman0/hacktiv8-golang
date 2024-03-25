@@ -39,5 +39,5 @@ type UpdateProductRequest struct {
 	HargaBeli   int    `json:"harga_beli"`
 	HargaJual   int    `json:"harga_jual"`
 	Stok        int    `json:"stok"`
-	UpdatedByID uint   `json:"updated_by"`
+	UpdatedBy   uint   `json:"updated_by"`
 }
