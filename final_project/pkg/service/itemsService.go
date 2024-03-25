@@ -124,16 +124,16 @@ func (is *ItemService) UpdateItem(id uint, roles string, idUser uint, req models
 			return nil, err
 		}
 	} else {
-		var products []models.Product
-		if err := is.db.Where("created_by = ?", idUser).Find(&products).Error; err != nil {
+		var products models.Product
+		if err := is.db.Where("created_by = ? and id_product", idUser, req.ProductID).Find(&products).Error; err != nil {
 			return nil, err
 		}
 
-		var item []models.Item
-		for _, product := range products {
-			if err := is.db.Where("product_id = ?", product.ProductID).Find(&item).Error; err != nil {
-				return nil, err
-			}
+		var item models.Item
+		item.Jumlah = req.Jumlah
+		item.SubTotal = item.Harga * req.Jumlah
+		if err := is.db.Save(&item).Error; err != nil {
+			return nil, err
 		}
 	}
 
