@@ -3,6 +3,7 @@ package controller
 import (
 	"final_project/pkg/models"
 	"final_project/pkg/service"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"net/http"
@@ -55,7 +56,7 @@ func (pc *ProductController) CreateProduct(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{
 		"code":    http.StatusCreated,
 		"status":  "success",
-		"message": "product created",
+		"message": "",
 		"data":    product,
 	})
 }
@@ -131,7 +132,7 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code":    http.StatusOK,
 		"status":  "success",
-		"message": "product updated",
+		"message": "",
 		"data":    product,
 	})
 }
@@ -165,7 +166,7 @@ func (pc *ProductController) DeleteProduct(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code":    http.StatusOK,
 		"status":  "success",
-		"message": "product deleted",
+		"message": fmt.Sprintf("product with id %d deleted", id),
 	})
 }
 
