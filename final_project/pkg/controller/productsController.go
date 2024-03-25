@@ -20,98 +20,11 @@ func NewProductController(service *service.ProductService) *ProductController {
 func (pc *ProductController) Routes(r *gin.RouterGroup, IsAuth gin.HandlerFunc) {
 	routeGroup := r.Group("/products")
 
-	routeGroup.GET("", pc.GetAllProducts)
-	routeGroup.POST("", pc.CreateProduct)
-	routeGroup.GET("/:id", pc.GetProduct)
-	routeGroup.PUT("/:id", pc.UpdateProduct)
-	routeGroup.DELETE("/:id", pc.DeleteProduct)
-}
-
-func (pc *ProductController) GetAllProducts(c *gin.Context) {
-	duser, _ := c.Get("user")
-	userData := duser.(jwt.MapClaims)
-	if userData["roles"] != "SUPER ADMIN" {
-		products, err := pc.service.GetAllProducts()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    http.StatusInternalServerError,
-				"status":  "error",
-				"message": err.Error(),
-			})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"code":    http.StatusOK,
-			"status":  "success",
-			"message": "",
-			"data":    products,
-		})
-	} else {
-		products, err := pc.service.GetAllProductsByCreatedBy(uint(userData["id"].(float64)))
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    http.StatusInternalServerError,
-				"status":  "error",
-				"message": err.Error(),
-			})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"code":    http.StatusOK,
-			"status":  "success",
-			"message": "",
-			"data":    products,
-		})
-	}
-}
-
-func (pc *ProductController) GetProduct(c *gin.Context) {
-	productID := c.Param("id")
-	id, err := strconv.Atoi(productID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
-			"status":  "error",
-			"message": "invalid product id",
-		})
-		return
-	}
-
-	duser, _ := c.Get("user")
-	userData := duser.(jwt.MapClaims)
-	if userData["roles"] != "SUPER ADMIN" {
-		product, err := pc.service.GetProductByID(uint(id))
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    http.StatusInternalServerError,
-				"status":  "error",
-				"message": err.Error(),
-			})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"code":    http.StatusOK,
-			"status":  "success",
-			"message": "",
-			"data":    product,
-		})
-	} else {
-		product, err := pc.service.GetProductByIDAndCreatedBy(uint(id), uint(userData["id"].(float64)))
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    http.StatusInternalServerError,
-				"status":  "error",
-				"message": err.Error(),
-			})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"code":    http.StatusOK,
-			"status":  "success",
-			"message": "",
-			"data":    product,
-		})
-	}
+	routeGroup.GET("", IsAuth, pc.GetAllProducts)
+	routeGroup.POST("", IsAuth, pc.CreateProduct)
+	routeGroup.GET("/:id", IsAuth, pc.GetProductByID)
+	routeGroup.PUT("/:id", IsAuth, pc.UpdateProduct)
+	routeGroup.DELETE("/:id", IsAuth, pc.DeleteProduct)
 }
 
 func (pc *ProductController) CreateProduct(c *gin.Context) {
@@ -124,7 +37,10 @@ func (pc *ProductController) CreateProduct(c *gin.Context) {
 		})
 		return
 	}
-	product, err := pc.service.CreateProduct(req)
+	duser, _ := c.Get("user")
+	userData := duser.(jwt.MapClaims)
+	idUser := uint(userData["id"].(float64))
+	product, err := pc.service.CreateProduct(req, idUser)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    http.StatusInternalServerError,
@@ -138,6 +54,39 @@ func (pc *ProductController) CreateProduct(c *gin.Context) {
 		"status":  "success",
 		"message": "product created",
 		"data":    product,
+	})
+}
+
+func (pc *ProductController) GetAllProducts(c *gin.Context) {
+	duser, _ := c.Get("user")
+	userData := duser.(jwt.MapClaims)
+	idUser := uint(userData["id"].(float64))
+	roles := userData["roles"].(string)
+
+	products, err := pc.service.GetAllProducts(roles, idUser)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    http.StatusInternalServerError,
+			"status":  "error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	if len(products) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"code":    http.StatusOK,
+			"status":  "success",
+			"message": "no data found",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    http.StatusOK,
+		"status":  "success",
+		"message": "",
+		"data":    products,
 	})
 }
 
@@ -163,40 +112,23 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 	}
 	duser, _ := c.Get("user")
 	userData := duser.(jwt.MapClaims)
-	if userData["roles"] != "SUPER ADMIN" {
-		product, err := pc.service.UpdateProduct(uint(id), req)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    http.StatusInternalServerError,
-				"status":  "error",
-				"message": err.Error(),
-			})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"code":    http.StatusOK,
-			"status":  "success",
-			"message": "product updated",
-			"data":    product,
+	idUser := uint(userData["id"].(float64))
+	roles := userData["roles"].(string)
+	product, err := pc.service.UpdateProduct(uint(id), roles, idUser, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    http.StatusInternalServerError,
+			"status":  "error",
+			"message": err.Error(),
 		})
-	} else {
-		product, err := pc.service.UpdateProductByCreatedBy(uint(id), uint(userData["id"].(float64)), req)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    http.StatusInternalServerError,
-				"status":  "error",
-				"message": err.Error(),
-			})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"code":    http.StatusOK,
-			"status":  "success",
-			"message": "product updated",
-			"data":    product,
-		})
+		return
 	}
-
+	c.JSON(http.StatusOK, gin.H{
+		"code":    http.StatusOK,
+		"status":  "success",
+		"message": "product updated",
+		"data":    product,
+	})
 }
 
 func (pc *ProductController) DeleteProduct(c *gin.Context) {
@@ -212,35 +144,54 @@ func (pc *ProductController) DeleteProduct(c *gin.Context) {
 	}
 	duser, _ := c.Get("user")
 	userData := duser.(jwt.MapClaims)
-	if userData["roles"] != "SUPER ADMIN" {
-		err = pc.service.DeleteProduct(uint(id))
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    http.StatusInternalServerError,
-				"status":  "error",
-				"message": err.Error(),
-			})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"code":    http.StatusOK,
-			"status":  "success",
-			"message": "product deleted",
+	idUser := uint(userData["id"].(float64))
+	roles := userData["roles"].(string)
+	err = pc.service.DeleteProduct(uint(id), roles, idUser)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    http.StatusInternalServerError,
+			"status":  "error",
+			"message": err.Error(),
 		})
-	} else {
-		err = pc.service.DeleteProductByCreatedBy(uint(id), uint(userData["id"].(float64)))
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    http.StatusInternalServerError,
-				"status":  "error",
-				"message": err.Error(),
-			})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"code":    http.StatusOK,
-			"status":  "success",
-			"message": "product deleted",
-		})
+		return
 	}
+	c.JSON(http.StatusOK, gin.H{
+		"code":    http.StatusOK,
+		"status":  "success",
+		"message": "product deleted",
+	})
+}
+
+func (pc *ProductController) GetProductByID(c *gin.Context) {
+	productID := c.Param("id")
+	id, err := strconv.Atoi(productID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"status":  "error",
+			"message": "invalid product id",
+		})
+		return
+	}
+
+	duser, _ := c.Get("user")
+	userData := duser.(jwt.MapClaims)
+	idUser := uint(userData["id"].(float64))
+	roles := userData["roles"].(string)
+
+	product, err := pc.service.GetProductByID(uint(id), roles, idUser)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    http.StatusInternalServerError,
+			"status":  "error",
+			"message": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"code":    http.StatusOK,
+		"status":  "success",
+		"message": "",
+		"data":    product,
+	})
 }
