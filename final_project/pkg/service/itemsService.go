@@ -2,8 +2,9 @@ package service
 
 import (
 	"final_project/pkg/models"
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type ItemService struct {
@@ -91,17 +92,26 @@ func (is *ItemService) GetAllItems(roles string, idUser uint) ([]models.Item, er
 			return nil, err
 		}
 	} else {
-		var products []models.Product
-		if err := is.db.Where("created_by = ?", idUser).Find(&products).Error; err != nil {
+		if err := is.db.Where("created_by = ?", idUser).Find(&items).Error; err != nil {
 			return nil, err
 		}
+	}
 
-		var item []models.Item
-		for _, product := range products {
-			if err := is.db.Where("product_id = ?", product.ProductID).Find(&item).Error; err != nil {
-				return nil, err
-			}
+	// search for the user who created the item
+	for i, item := range items {
+		var user models.User
+		if err := is.db.First(&user, item.CreatedByID).Error; err != nil {
+			return nil, err
 		}
+		items[i].CreatedBy = user
+	}
+	// search for the user who updated the item
+	for i, item := range items {
+		var user models.User
+		if err := is.db.First(&user, item.UpdatedByID).Error; err != nil {
+			return nil, err
+		}
+		items[i].UpdatedBy = user
 	}
 
 	return items, nil

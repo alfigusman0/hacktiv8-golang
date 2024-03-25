@@ -25,6 +25,7 @@ type GetAllItemRequest struct {
 	Jumlah    int   `json:"jumlah"`
 	SubTotal  int   `json:"sub_total"`
 	CreatedBy *User `json:"created_by"`
+	UpdatedBy *User `json:"updated_by"`
 }
 
 type CreateItemRequest struct {

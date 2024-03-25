@@ -78,15 +78,6 @@ func (i *ItemController) GetAllItem(c *gin.Context) {
 		})
 	}
 
-	if len(items) == 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"code":    http.StatusOK,
-			"status":  "success",
-			"message": "no data found",
-		})
-		return
-	}
-
 	c.JSON(http.StatusOK, gin.H{
 		"code":    http.StatusOK,
 		"status":  "success",
