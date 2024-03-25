@@ -99,7 +99,6 @@ func (o *OrderController) UpdateOrder(c *gin.Context) {
 	duser, _ := c.Get("user")
 	userData := duser.(jwt.MapClaims)
 	idUser := uint(userData["id"].(float64))
-	roles := userData["roles"].(string)
 
 	orderID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -120,7 +119,7 @@ func (o *OrderController) UpdateOrder(c *gin.Context) {
 		return
 	}
 
-	order, err := o.service.UpdateOrder(uint(orderID), roles, idUser, req)
+	order, err := o.service.UpdateOrder(uint(orderID), idUser, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    http.StatusInternalServerError,

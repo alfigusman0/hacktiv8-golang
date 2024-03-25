@@ -129,37 +129,32 @@ func (os *OrderService) GetAllOrders(roles string, idUser uint) ([]models.Order,
 	return orders, nil
 }
 
-func (os *OrderService) UpdateOrder(orderID uint, roles string, idUser uint, req models.UpdateOrderRequest) (*models.Order, error) {
+func (os *OrderService) UpdateOrder(orderID uint, idUser uint, req models.UpdateOrderRequest) (*models.Order, error) {
 	var order models.Order
-	if roles == "SUPER ADMIN" {
-		if err := os.db.First(&order, orderID).Error; err != nil {
-			return nil, err
-		}
-	} else {
-		if err := os.db.Where("created_by = ?", idUser).First(&order, orderID).Error; err != nil {
-			return nil, err
-		}
+	if err := os.db.First(&order, orderID).Error; err != nil {
+		return nil, err
 	}
 
+	// search for the user who updated the order
 	var user models.User
 	if err := os.db.First(&user, idUser).Error; err != nil {
 		return nil, err
 	}
+
+	// Update the items
+	var items []models.Item
 	tmptotal := 0
 	total := 0
 
-	if roles == "SUPER ADMIN" {
+	// if roles super admin, can add product to item by all user
+	// if roles admin, can add product to item by admin
+	if user.Roles == "SUPER ADMIN" {
 		for _, item := range req.Items {
-			var itemModel models.Item
-			if err := os.db.First(&itemModel, item.ItemID).Error; err != nil {
-				return nil, err
-			}
-
 			var product models.Product
 			if err := os.db.First(&product, item.ProductID).Error; err != nil {
 				return nil, err
 			}
-
+			var itemModel models.Item
 			itemModel.ItemID = item.ItemID
 			itemModel.OrderID = order.OrderID
 			itemModel.ProductID = item.ProductID
@@ -167,24 +162,20 @@ func (os *OrderService) UpdateOrder(orderID uint, roles string, idUser uint, req
 			itemModel.Jumlah = item.Jumlah
 			itemModel.SubTotal = product.HargaJual * item.Jumlah
 			tmptotal += itemModel.SubTotal
+			itemModel.CreatedBy = user
+			itemModel.DateCreated = time.Now()
 			itemModel.UpdatedBy = user
 			itemModel.DateUpdated = time.Now()
-			if err := os.db.Save(&itemModel).Error; err != nil {
-				return nil, err
-			}
+			items = append(items, itemModel)
 		}
 	} else {
 		for _, item := range req.Items {
-			var itemModel models.Item
-			if err := os.db.Where("created_by = ?", idUser).First(&itemModel, item.ItemID).Error; err != nil {
-				return nil, err
-			}
-
 			var product models.Product
+			// search for the product that created by the user
 			if err := os.db.Where("created_by = ? and id_product = ?", idUser, item.ProductID).First(&product, item.ProductID).Error; err != nil {
 				return nil, err
 			}
-
+			var itemModel models.Item
 			itemModel.ItemID = item.ItemID
 			itemModel.OrderID = order.OrderID
 			itemModel.ProductID = item.ProductID
@@ -192,16 +183,22 @@ func (os *OrderService) UpdateOrder(orderID uint, roles string, idUser uint, req
 			itemModel.Jumlah = item.Jumlah
 			itemModel.SubTotal = product.HargaJual * item.Jumlah
 			tmptotal += itemModel.SubTotal
+			itemModel.CreatedBy = user
+			itemModel.DateCreated = time.Now()
 			itemModel.UpdatedBy = user
 			itemModel.DateUpdated = time.Now()
-			if err := os.db.Save(&itemModel).Error; err != nil {
-				return nil, err
-			}
+			items = append(items, itemModel)
 		}
 	}
 
-	total = tmptotal - order.Potongan
+	if err := os.db.Save(&items).Error; err != nil {
+		return nil, err
+	}
+
+	order.CustomerName = req.CustomerName
 	order.TmpTotal = tmptotal
+	order.Potongan = req.Potongan
+	total = tmptotal - order.Potongan
 	order.Total = total
 	order.UpdatedBy = user
 	order.DateUpdated = time.Now()
@@ -209,6 +206,7 @@ func (os *OrderService) UpdateOrder(orderID uint, roles string, idUser uint, req
 		return nil, err
 	}
 
+	order.Items = items
 	return &order, nil
 }
 
