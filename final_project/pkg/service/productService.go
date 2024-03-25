@@ -15,12 +15,13 @@ func NewProductService(db *gorm.DB) *ProductService {
 	return &ProductService{db}
 }
 
-func (ps *ProductService) CreateProduct(req models.CreateProductRequest, idUser uint) (*models.Product, error) {
+func (ps *ProductService) CreateProduct(idUser uint, req models.CreateProductRequest) (*models.Product, error) {
 	//create product reference to user
 	var user models.User
 	if err := ps.db.First(&user, idUser).Error; err != nil {
 		return nil, err
 	}
+
 	product := models.Product{
 		ProductName: req.ProductName,
 		HargaBeli:   req.HargaBeli,
@@ -80,10 +81,12 @@ func (ps *ProductService) UpdateProduct(productID uint, roles string, idUser uin
 			return nil, err
 		}
 	}
+
 	var user models.User
 	if err := ps.db.First(&user, idUser).Error; err != nil {
 		return nil, err
 	}
+
 	product.ProductName = req.ProductName
 	product.HargaBeli = req.HargaBeli
 	product.HargaJual = req.HargaJual

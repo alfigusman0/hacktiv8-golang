@@ -2,7 +2,6 @@ package service
 
 import (
 	"final_project/pkg/models"
-	"fmt"
 	"gorm.io/gorm"
 	"time"
 )
@@ -15,52 +14,67 @@ func NewOrderService(db *gorm.DB) *OrderService {
 	return &OrderService{db}
 }
 
-func (os *OrderService) GetAllOrders() ([]models.Order, error) {
-	var orders []models.Order
-	if err := os.db.Preload("Items").Find(&orders).Error; err != nil {
+func (os *OrderService) CreateOrder(idUser uint, req models.CreateOrderRequest) (*models.Order, error) {
+	//create order reference to user
+	var user models.User
+	if err := os.db.First(&user, idUser).Error; err != nil {
 		return nil, err
 	}
-	return orders, nil
-}
 
-func (os *OrderService) GetOrderByID(orderID uint) (*models.Order, error) {
-	var order models.Order
-	if err := os.db.Preload("Items").First(&order, orderID).Error; err != nil {
-		return nil, err
-	}
-	return &order, nil
-}
-
-func (os *OrderService) CreateOrder(req models.CreateOrderRequest) (*models.Order, error) {
-	now := time.Now()
 	order := models.Order{
 		CustomerName: req.CustomerName,
 		TmpTotal:     0,
 		Potongan:     req.Potongan,
 		Total:        0,
-		DateCreated:  now,
-		DateUpdated:  now,
+		CreatedBy:    user,
+		DateCreated:  time.Now(),
+		UpdatedBy:    user,
+		DateUpdated:  time.Now(),
 	}
 	if err := os.db.Create(&order).Error; err != nil {
 		return nil, err
 	}
 
 	var items []models.Item
-	tmptotal := 0.0
-	total := 0.0
+	tmptotal := 0
+	total := 0
 
-	for _, item := range req.Items {
-		var itemModel models.Item
-		itemModel.OrderID = order.OrderID
-		itemModel.ProductID = item.ProductID
-		itemModel.Harga = item.Harga
-		itemModel.Jumlah = item.Jumlah
-		itemModel.SubTotal = item.Harga * float64(item.Jumlah)
-		tmptotal += itemModel.SubTotal
-		items = append(items, itemModel)
+	// if roles super admin, can add product to item by all user
+	// if roles admin, can add product to item by admin
+	if user.Roles == "SUPER ADMIN" {
+		for _, item := range req.Items {
+			var itemModel models.Item
+			itemModel.OrderID = order.OrderID
+			itemModel.ProductID = item.ProductID
+			itemModel.Harga = item.Harga
+			itemModel.Jumlah = item.Jumlah
+			itemModel.SubTotal = item.Harga * item.Jumlah
+			tmptotal += itemModel.SubTotal
+			items = append(items, itemModel)
+		}
+	} else {
+		var products []models.Product
+		if err := os.db.Where("created_by = ?", idUser).Find(&products).Error; err != nil {
+			return nil, err
+		}
+
+		for _, item := range req.Items {
+			for _, product := range products {
+				if item.ProductID == product.ProductID {
+					var itemModel models.Item
+					itemModel.OrderID = order.OrderID
+					itemModel.ProductID = item.ProductID
+					itemModel.Harga = item.Harga
+					itemModel.Jumlah = item.Jumlah
+					itemModel.SubTotal = item.Harga * item.Jumlah
+					tmptotal += itemModel.SubTotal
+					items = append(items, itemModel)
+				}
+			}
+		}
 	}
 
-	if err := os.db.Create(&items).Error; err != nil {
+	if err := os.db.Save(&items).Error; err != nil {
 		return nil, err
 	}
 
@@ -75,32 +89,91 @@ func (os *OrderService) CreateOrder(req models.CreateOrderRequest) (*models.Orde
 	return &order, nil
 }
 
-func (os *OrderService) UpdateOrder(orderID uint, req models.UpdateOrderRequest) (*models.Order, error) {
-	order, err := os.GetOrderByID(orderID)
-	fmt.Printf("order: %+v\n", order)
-	if err != nil {
-		return nil, err
+func (os *OrderService) GetAllOrders(roles string, idUser uint) ([]models.Order, error) {
+	var orders []models.Order
+	if roles == "SUPER ADMIN" {
+		if err := os.db.Preload("Items").Find(&orders).Error; err != nil {
+			return nil, err
+		}
+	} else {
+		if err := os.db.Preload("Items").Where("created_by = ?", idUser).Find(&orders).Error; err != nil {
+			return nil, err
+		}
 	}
 
-	order.CustomerName = req.CustomerName
+	// search for the user who created the order
+	for i, order := range orders {
+		var user models.User
+		if err := os.db.First(&user, order.CreatedByID).Error; err != nil {
+			return nil, err
+		}
+		orders[i].CreatedBy = user
+	}
+	// search for the user who updated the order
+	for i, order := range orders {
+		var user models.User
+		if err := os.db.First(&user, order.UpdatedByID).Error; err != nil {
+			return nil, err
+		}
+		orders[i].UpdatedBy = user
+	}
 
-	if err := os.db.Save(&order).Error; err != nil {
+	return orders, nil
+}
+
+func (os *OrderService) UpdateOrder(orderID uint, roles string, idUser uint, req models.UpdateOrderRequest) (*models.Order, error) {
+	var order models.Order
+	if roles == "SUPER ADMIN" {
+		if err := os.db.First(&order, orderID).Error; err != nil {
+			return nil, err
+		}
+	} else {
+		if err := os.db.Where("created_by = ?", idUser).First(&order, orderID).Error; err != nil {
+			return nil, err
+		}
+	}
+
+	var user models.User
+	if err := os.db.First(&user, idUser).Error; err != nil {
 		return nil, err
 	}
 
 	var items []models.Item
-	tmptotal := 0.0
-	total := 0.0
+	tmptotal := 0
+	total := 0
 
-	for _, item := range req.Items {
-		var itemModel models.Item
-		itemModel.OrderID = order.OrderID
-		itemModel.ProductID = item.ProductID
-		itemModel.Harga = item.Harga
-		itemModel.Jumlah = item.Jumlah
-		itemModel.SubTotal = item.Harga * float64(item.Jumlah)
-		tmptotal += itemModel.SubTotal
-		items = append(items, itemModel)
+	// if roles super admin, can add product to item by all user
+	// if roles admin, can add product to item by admin
+	if user.Roles == "SUPER ADMIN" {
+		for _, item := range req.Items {
+			var itemModel models.Item
+			itemModel.OrderID = order.OrderID
+			itemModel.ProductID = item.ProductID
+			itemModel.Harga = item.Harga
+			itemModel.Jumlah = item.Jumlah
+			itemModel.SubTotal = item.Harga * item.Jumlah
+			tmptotal += itemModel.SubTotal
+			items = append(items, itemModel)
+		}
+	} else {
+		var products []models.Product
+		if err := os.db.Where("created_by = ?", idUser).Find(&products).Error; err != nil {
+			return nil, err
+		}
+		for _, item := range req.Items {
+			for _, product := range products {
+				if item.ProductID == product.ProductID {
+					var itemModel models.Item
+					itemModel.OrderID = order.OrderID
+					itemModel.ProductID = item.ProductID
+					itemModel.Harga = item.Harga
+					itemModel.Jumlah = item.Jumlah
+					itemModel.SubTotal = item.Harga * item.Jumlah
+					tmptotal += itemModel.SubTotal
+					items = append(items, itemModel)
+				}
+			}
+		}
 	}
 
 	if err := os.db.Save(&items).Error; err != nil {
@@ -108,24 +181,63 @@ func (os *OrderService) UpdateOrder(orderID uint, req models.UpdateOrderRequest)
 	}
 
 	total = tmptotal - order.Potongan
+
+	order.CustomerName = req.CustomerName
 	order.TmpTotal = tmptotal
+	order.Potongan = req.Potongan
 	order.Total = total
+	order.UpdatedBy = user
+	order.DateUpdated = time.Now()
 	if err := os.db.Save(&order).Error; err != nil {
 		return nil, err
 	}
 
 	order.Items = items
-
-	return order, nil
+	return &order, nil
 }
 
-func (os *OrderService) DeleteOrder(orderID uint) error {
-	order, err := os.GetOrderByID(orderID)
-	if err != nil {
-		return err
+func (os *OrderService) DeleteOrder(orderID uint, roles string, idUser uint) error {
+	var order models.Order
+	if roles == "SUPER ADMIN" {
+		if err := os.db.First(&order, orderID).Error; err != nil {
+			return err
+		}
+	} else {
+		if err := os.db.Where("created_by = ?", idUser).First(&order, orderID).Error; err != nil {
+			return err
+		}
 	}
+
 	if err := os.db.Delete(&order).Error; err != nil {
 		return err
 	}
 	return nil
+}
+
+func (os *OrderService) GetOrderByID(orderID uint, roles string, idUser uint) (*models.Order, error) {
+	var order models.Order
+	if roles == "SUPER ADMIN" {
+		if err := os.db.Preload("Items").First(&order, orderID).Error; err != nil {
+			return nil, err
+		}
+	} else {
+		if err := os.db.Preload("Items").Where("created_by = ?", idUser).First(&order, orderID).Error; err != nil {
+			return nil, err
+		}
+	}
+
+	// search for the user who created the order
+	var user models.User
+	if err := os.db.First(&user, order.CreatedByID).Error; err != nil {
+		return nil, err
+	}
+	order.CreatedBy = user
+
+	// search for the user who updated the order
+	if err := os.db.First(&user, order.UpdatedByID).Error; err != nil {
+		return nil, err
+	}
+	order.UpdatedBy = user
+
+	return &order, nil
 }

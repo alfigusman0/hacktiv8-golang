@@ -28,6 +28,10 @@ func (pc *ProductController) Routes(r *gin.RouterGroup, IsAuth gin.HandlerFunc) 
 }
 
 func (pc *ProductController) CreateProduct(c *gin.Context) {
+	duser, _ := c.Get("user")
+	userData := duser.(jwt.MapClaims)
+	idUser := uint(userData["id"].(float64))
+
 	var req models.CreateProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -37,10 +41,8 @@ func (pc *ProductController) CreateProduct(c *gin.Context) {
 		})
 		return
 	}
-	duser, _ := c.Get("user")
-	userData := duser.(jwt.MapClaims)
-	idUser := uint(userData["id"].(float64))
-	product, err := pc.service.CreateProduct(req, idUser)
+
+	product, err := pc.service.CreateProduct(idUser, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    http.StatusInternalServerError,
@@ -49,6 +51,7 @@ func (pc *ProductController) CreateProduct(c *gin.Context) {
 		})
 		return
 	}
+
 	c.JSON(http.StatusCreated, gin.H{
 		"code":    http.StatusCreated,
 		"status":  "success",
@@ -91,8 +94,12 @@ func (pc *ProductController) GetAllProducts(c *gin.Context) {
 }
 
 func (pc *ProductController) UpdateProduct(c *gin.Context) {
-	productID := c.Param("id")
-	id, err := strconv.Atoi(productID)
+	duser, _ := c.Get("user")
+	userData := duser.(jwt.MapClaims)
+	idUser := uint(userData["id"].(float64))
+	roles := userData["roles"].(string)
+
+	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
@@ -110,10 +117,7 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 		})
 		return
 	}
-	duser, _ := c.Get("user")
-	userData := duser.(jwt.MapClaims)
-	idUser := uint(userData["id"].(float64))
-	roles := userData["roles"].(string)
+
 	product, err := pc.service.UpdateProduct(uint(id), roles, idUser, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -123,6 +127,7 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 		})
 		return
 	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"code":    http.StatusOK,
 		"status":  "success",
@@ -132,8 +137,12 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 }
 
 func (pc *ProductController) DeleteProduct(c *gin.Context) {
-	productID := c.Param("id")
-	id, err := strconv.Atoi(productID)
+	duser, _ := c.Get("user")
+	userData := duser.(jwt.MapClaims)
+	idUser := uint(userData["id"].(float64))
+	roles := userData["roles"].(string)
+
+	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
@@ -142,10 +151,7 @@ func (pc *ProductController) DeleteProduct(c *gin.Context) {
 		})
 		return
 	}
-	duser, _ := c.Get("user")
-	userData := duser.(jwt.MapClaims)
-	idUser := uint(userData["id"].(float64))
-	roles := userData["roles"].(string)
+
 	err = pc.service.DeleteProduct(uint(id), roles, idUser)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -155,6 +161,7 @@ func (pc *ProductController) DeleteProduct(c *gin.Context) {
 		})
 		return
 	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"code":    http.StatusOK,
 		"status":  "success",
@@ -163,8 +170,12 @@ func (pc *ProductController) DeleteProduct(c *gin.Context) {
 }
 
 func (pc *ProductController) GetProductByID(c *gin.Context) {
-	productID := c.Param("id")
-	id, err := strconv.Atoi(productID)
+	duser, _ := c.Get("user")
+	userData := duser.(jwt.MapClaims)
+	idUser := uint(userData["id"].(float64))
+	roles := userData["roles"].(string)
+
+	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
@@ -173,11 +184,6 @@ func (pc *ProductController) GetProductByID(c *gin.Context) {
 		})
 		return
 	}
-
-	duser, _ := c.Get("user")
-	userData := duser.(jwt.MapClaims)
-	idUser := uint(userData["id"].(float64))
-	roles := userData["roles"].(string)
 
 	product, err := pc.service.GetProductByID(uint(id), roles, idUser)
 	if err != nil {
@@ -188,6 +194,7 @@ func (pc *ProductController) GetProductByID(c *gin.Context) {
 		})
 		return
 	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"code":    http.StatusOK,
 		"status":  "success",

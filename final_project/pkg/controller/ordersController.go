@@ -4,6 +4,8 @@ import (
 	"final_project/pkg/models"
 	"final_project/pkg/service"
 	"fmt"
+	"github.com/golang-jwt/jwt/v5"
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -20,79 +22,185 @@ func NewOrderController(service *service.OrderService) *OrderController {
 func (o *OrderController) Routes(r *gin.RouterGroup, IsAuth gin.HandlerFunc) {
 	routeGroup := r.Group("/orders")
 
-	routeGroup.GET("", o.GetAllOrder)
+	routeGroup.GET("", IsAuth, o.GetAllOrder)
 	routeGroup.POST("", IsAuth, o.CreateOrder)
-	routeGroup.GET("/:id", o.GetOrderByID)
+	routeGroup.GET("/:id", IsAuth, o.GetOrderByID)
 	routeGroup.PUT("/:id", IsAuth, o.UpdateOrder)
 	routeGroup.DELETE("/:id", IsAuth, o.DeleteOrder)
 }
 
-func (o *OrderController) GetAllOrder(c *gin.Context) {
-	orders, err := o.service.GetAllOrders()
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(200, orders)
-}
-
-func (o *OrderController) GetOrderByID(c *gin.Context) {
-	orderID, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		c.JSON(400, gin.H{"error": "invalid order id"})
-		return
-	}
-	order, err := o.service.GetOrderByID(uint(orderID))
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(200, order)
-}
-
 func (o *OrderController) CreateOrder(c *gin.Context) {
+	duser, _ := c.Get("user")
+	userData := duser.(jwt.MapClaims)
+	idUser := uint(userData["id"].(float64))
+
 	var req models.CreateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"status":  "error",
+			"message": err.Error(),
+		})
 		return
 	}
-	order, err := o.service.CreateOrder(req)
+
+	order, err := o.service.CreateOrder(idUser, req)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    http.StatusInternalServerError,
+			"status":  "error",
+			"message": err.Error(),
+		})
 		return
 	}
-	c.JSON(201, order)
+
+	c.JSON(http.StatusCreated, gin.H{
+		"code":    http.StatusCreated,
+		"status":  "success",
+		"message": "",
+		"data":    order,
+	})
+}
+
+func (o *OrderController) GetAllOrder(c *gin.Context) {
+	duser, _ := c.Get("user")
+	userData := duser.(jwt.MapClaims)
+	idUser := uint(userData["id"].(float64))
+	roles := userData["roles"].(string)
+
+	orders, err := o.service.GetAllOrders(roles, idUser)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    http.StatusInternalServerError,
+			"status":  "error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	if len(orders) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"code":    http.StatusOK,
+			"status":  "success",
+			"message": "no data found",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    http.StatusOK,
+		"status":  "success",
+		"message": "",
+		"data":    orders,
+	})
 }
 
 func (o *OrderController) UpdateOrder(c *gin.Context) {
+	duser, _ := c.Get("user")
+	userData := duser.(jwt.MapClaims)
+	idUser := uint(userData["id"].(float64))
+	roles := userData["roles"].(string)
+
 	orderID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(400, gin.H{"error": "invalid order id"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"status":  "error",
+			"message": "invalid order id",
+		})
 		return
 	}
 	var req models.UpdateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"status":  "error",
+			"message": err.Error(),
+		})
 		return
 	}
-	order, err := o.service.UpdateOrder(uint(orderID), req)
+
+	order, err := o.service.UpdateOrder(uint(orderID), roles, idUser, req)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    http.StatusInternalServerError,
+			"status":  "error",
+			"message": err.Error(),
+		})
 		return
 	}
-	c.JSON(200, order)
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    http.StatusOK,
+		"status":  "success",
+		"message": "",
+		"data":    order,
+	})
 }
 
 func (o *OrderController) DeleteOrder(c *gin.Context) {
+	duser, _ := c.Get("user")
+	userData := duser.(jwt.MapClaims)
+	idUser := uint(userData["id"].(float64))
+	roles := userData["roles"].(string)
+
 	orderID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(400, gin.H{"error": "invalid order id"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"status":  "error",
+			"message": "invalid order id",
+		})
 		return
 	}
-	err = o.service.DeleteOrder(uint(orderID))
+
+	err = o.service.DeleteOrder(uint(orderID), roles, idUser)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    http.StatusInternalServerError,
+			"status":  "error",
+			"message": err.Error(),
+		})
 		return
 	}
-	c.JSON(200, gin.H{"message": fmt.Sprintf("order with id %d deleted", orderID)})
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    http.StatusOK,
+		"status":  "success",
+		"message": fmt.Sprintf("order with id %d deleted", orderID),
+	})
+}
+
+func (o *OrderController) GetOrderByID(c *gin.Context) {
+	duser, _ := c.Get("user")
+	userData := duser.(jwt.MapClaims)
+	idUser := uint(userData["id"].(float64))
+	roles := userData["roles"].(string)
+
+	orderID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"status":  "error",
+			"message": "invalid product id",
+		})
+		return
+	}
+
+	order, err := o.service.GetOrderByID(uint(orderID), roles, idUser)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    http.StatusInternalServerError,
+			"status":  "error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    http.StatusOK,
+		"status":  "success",
+		"message": "",
+		"data":    order,
+	})
 }
